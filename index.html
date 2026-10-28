@@ -582,11 +582,14 @@
 
             <!-- Kartu Kustomisasi Firebase Config untuk GitHub Eksternal -->
             <div class="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-sm space-y-4">
-                <div class="flex items-center justify-between">
+                <div class="flex flex-wrap items-center justify-between gap-2">
                     <div>
                         <h3 class="font-bold text-slate-800 text-sm sm:text-base">Konfigurasi Database & Rules Firebase Pribadi</h3>
-                        <p class="text-xs text-slate-500">Panduan pengaturan Firebase Console saat aplikasi di-upload ke GitHub Pages pribadi Anda.</p>
+                        <p class="text-xs text-slate-500">Project Firebase Anda (<strong class="text-emerald-700 font-mono">undangandigital-319db</strong>) sudah tertanam otomatis di dalam kode aplikasi ini.</p>
                     </div>
+                    <span class="px-3 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 flex items-center gap-1.5">
+                        <i class="fa-solid fa-link"></i> Terhubung: undangandigital-319db
+                    </span>
                 </div>
 
                 <!-- Langkah Setup Firebase -->
@@ -620,11 +623,11 @@ service cloud.firestore {
                 </div>
 
                 <div class="pt-2 border-t border-slate-100">
-                    <label class="block text-xs font-semibold text-slate-700 mb-1.5">Uji Coba / Hubungkan Firebase Config Anda:</label>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1.5">Konfigurasi Firebase Tertanam (Dapat Diganti Kapan Saja):</label>
                     <div class="flex flex-col sm:flex-row gap-2">
-                        <input type="text" id="custom-firebase-input" placeholder='Tempel JSON firebaseConfig Anda di sini: {"apiKey":"...", "projectId":"..."}' class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <input type="text" id="custom-firebase-input" value='{"apiKey":"AIzaSyBPBGRHAW3wkjJbdJnHrRL8GifDjmeOMMo","authDomain":"undangandigital-319db.firebaseapp.com","projectId":"undangandigital-319db","storageBucket":"undangandigital-319db.firebasestorage.app","messagingSenderId":"773979139564","appId":"1:773979139564:web:4803b9b676679e75f3e4c9"}' placeholder='Tempel JSON firebaseConfig Anda di sini: {"apiKey":"...", "projectId":"..."}' class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500">
                         <button onclick="window.app.applyCustomFirebase()" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-semibold shrink-0">
-                            Hubungkan Firebase Baru
+                            Muat Ulang Koneksi
                         </button>
                     </div>
                 </div>
@@ -857,6 +860,18 @@ service cloud.firestore {
         import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // =====================================================
+        // KONFIGURASI FIREBASE PRIBADI ANDA (TERTANAM OTOMATIS)
+        // =====================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyBPBGRHAW3wkjJbdJnHrRL8GifDjmeOMMo",
+            authDomain: "undangandigital-319db.firebaseapp.com",
+            projectId: "undangandigital-319db",
+            storageBucket: "undangandigital-319db.firebasestorage.app",
+            messagingSenderId: "773979139564",
+            appId: "1:773979139564:web:4803b9b676679e75f3e4c9"
+        };
+
+        // =====================================================
         // STATE MANAJEMEN APLIKASI (IN-MEMORY + CLOUD FIRESTORE)
         // =====================================================
         const state = {
@@ -1051,38 +1066,59 @@ service cloud.firestore {
         // =====================================================
         async function initFirebaseConnection(customConfigObj = null) {
             try {
-                let firebaseConfig = customConfigObj;
-                if (!firebaseConfig && typeof __firebase_config !== 'undefined' && __firebase_config) {
-                    firebaseConfig = JSON.parse(__firebase_config);
-                }
+                // Gunakan firebaseConfig pribadi Anda (undangandigital-319db) secara default
+                const activeConfig = customConfigObj || firebaseConfig;
 
-                if (!firebaseConfig) {
-                    updateCloudBadge('offline', 'Mode Lokal (Siap GitHub)');
-                    return;
-                }
-
-                const app = initializeApp(firebaseConfig, customConfigObj ? 'custom-' + Date.now() : undefined);
+                const appName = 'dompet-keluarga-' + (activeConfig.projectId || 'app') + (customConfigObj ? '-' + Date.now() : '');
+                const app = initializeApp(activeConfig, appName);
                 const auth = getAuth(app);
                 state.db = getFirestore(app);
 
-                // RULE 3: Auth Before Queries
-                if (!customConfigObj && typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
+                // Login secara Anonymous ke project Firebase Anda
+                await signInAnonymously(auth);
 
                 onAuthStateChanged(auth, (user) => {
                     state.user = user;
                     if (user) {
-                        document.getElementById('settings-user-id').textContent = user.uid;
-                        updateCloudBadge('online', 'Cloud Aktif');
+                        document.getElementById('settings-user-id').textContent = `${user.uid} (${activeConfig.projectId})`;
+                        updateCloudBadge('online', `Cloud: ${activeConfig.projectId}`);
                         startRealtimeListeners();
                     }
                 });
             } catch (err) {
-                console.error("Firebase Init Error:", err);
-                updateCloudBadge('offline', 'Offline Mode');
+                console.error("Firebase Init Error pada project pribadi:", err);
+
+                // Jika Anonymous Auth belum diaktifkan di Firebase Console pribadi, beri info & gunakan fallback jika ada
+                if (typeof __firebase_config !== 'undefined' && __firebase_config && !customConfigObj) {
+                    try {
+                        const fallbackConfig = JSON.parse(__firebase_config);
+                        const fallbackApp = initializeApp(fallbackConfig, 'fallback-' + Date.now());
+                        const fallbackAuth = getAuth(fallbackApp);
+                        state.db = getFirestore(fallbackApp);
+
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await signInWithCustomToken(fallbackAuth, __initial_auth_token);
+                        } else {
+                            await signInAnonymously(fallbackAuth);
+                        }
+
+                        onAuthStateChanged(fallbackAuth, (user) => {
+                            state.user = user;
+                            if (user) {
+                                document.getElementById('settings-user-id').textContent = user.uid;
+                                updateCloudBadge('online', 'Cloud Preview Aktif');
+                                startRealtimeListeners();
+                            }
+                        });
+                        showToast("Aktifkan 'Anonymous' di Authentication Firebase (undangandigital-319db) agar database pribadi Anda aktif.", "info");
+                        return;
+                    } catch (fallbackErr) {
+                        console.error("Fallback Firebase Error:", fallbackErr);
+                    }
+                }
+
+                updateCloudBadge('offline', 'Perlu Aktifkan Auth');
+                showToast("Pastikan Sign-in method 'Anonymous' sudah diaktifkan di Firebase Console (undangandigital-319db)", "error");
             }
         }
 
