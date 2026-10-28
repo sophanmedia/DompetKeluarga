@@ -1,0 +1,2175 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DompetKeluarga - Aplikasi Keuangan Keluarga Online</title>
+    
+    <!-- Meta Tags untuk PWA (Progressive Web App) Android & iOS -->
+    <meta name="theme-color" content="#059669">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="DompetKeluarga">
+    <meta name="description" content="Aplikasi pencatatan keuangan keluarga real-time berbasis Cloud & PWA.">
+    
+    <!-- Dynamic Manifest Link (Akan diisi otomatis via JavaScript agar bekerja dalam 1 file maupun di GitHub) -->
+    <link rel="manifest" id="pwa-manifest">
+    <link rel="apple-touch-icon" id="apple-touch-icon" href="https://placehold.co/192x192/059669/ffffff?text=DK">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome untuk Ikon Aplikasi -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            900: '#064e3b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            background-color: #f8fafc;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        .safe-bottom {
+            padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+        }
+        @keyframes pulse-soft {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        .animate-pulse-soft {
+            animation: pulse-soft 2s infinite;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased selection:bg-emerald-500 selection:text-white">
+
+    <!-- ========================================== -->
+    <!-- TOAST NOTIFICATION CONTAINER               -->
+    <!-- ========================================== -->
+    <div id="toast-container" class="fixed top-4 right-4 left-4 sm:left-auto sm:w-96 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- ========================================== -->
+    <!-- TOP NAVIGATION BAR (HEADER)                -->
+    <!-- ========================================== -->
+    <header class="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-200/80 shadow-sm">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+            <!-- Brand & Status Cloud -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center text-white shadow-md shadow-emerald-500/20">
+                    <i class="fa-solid fa-wallet text-lg"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="font-bold text-base sm:text-lg text-slate-900 tracking-tight leading-none">DompetKeluarga</h1>
+                        <span id="cloud-badge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span> Menghubungkan...
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
+                        <span>Kode: <strong id="header-family-code" class="text-emerald-700 font-semibold">KELUARGA-01</strong></span>
+                        <span>•</span>
+                        <span id="header-member-name" class="font-medium text-slate-700">Ayah</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Action Buttons Kanan -->
+            <div class="flex items-center gap-2">
+                <!-- Tombol Install PWA (Muncul jika didukung browser) -->
+                <button id="btn-install-pwa" onclick="window.app.triggerInstallPWA()" class="hidden items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all">
+                    <i class="fa-solid fa-download"></i>
+                    <span class="hidden sm:inline">Install App</span>
+                </button>
+
+                <!-- Tombol Ganti Profil / Kode Keluarga Cepat -->
+                <button onclick="window.app.openModal('modal-profile')" class="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl text-xs font-semibold transition-all" title="Profil & Kode Keluarga">
+                    <span id="header-member-avatar" class="text-sm">👨</span>
+                    <span class="hidden sm:inline">Ganti Profil</span>
+                    <i class="fa-solid fa-chevron-down text-[10px] text-slate-400"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ========================================== -->
+    <!-- MAIN CONTENT CONTAINER                     -->
+    <!-- ========================================== -->
+    <main class="max-w-5xl mx-auto px-4 pt-4 safe-bottom">
+
+        <!-- Filter Periode Bulan & Tahun + Tombol Tambah Cepat -->
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-5 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-sm">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                    <i class="fa-regular fa-calendar-days text-sm"></i>
+                </div>
+                <select id="filter-month" onchange="window.app.handlePeriodChange()" class="bg-slate-50 border border-slate-200 text-slate-700 text-xs sm:text-sm font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <option value="all">Semua Bulan</option>
+                    <option value="0">Januari</option>
+                    <option value="1">Februari</option>
+                    <option value="2">Maret</option>
+                    <option value="3">April</option>
+                    <option value="4">Mei</option>
+                    <option value="5">Juni</option>
+                    <option value="6">Juli</option>
+                    <option value="7">Agustus</option>
+                    <option value="8">September</option>
+                    <option value="9">Oktober</option>
+                    <option value="10">November</option>
+                    <option value="11">Desember</option>
+                </select>
+                <select id="filter-year" onchange="window.app.handlePeriodChange()" class="bg-slate-50 border border-slate-200 text-slate-700 text-xs sm:text-sm font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <option value="2025">2025</option>
+                    <option value="2026" selected>2026</option>
+                    <option value="2027">2027</option>
+                </select>
+            </div>
+
+            <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <button onclick="window.app.openTransactionModal('income')" class="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-sm shadow-emerald-600/20 transition-all">
+                    <i class="fa-solid fa-plus"></i> Pemasukan
+                </button>
+                <button onclick="window.app.openTransactionModal('expense')" class="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-sm shadow-rose-600/20 transition-all">
+                    <i class="fa-solid fa-minus"></i> Pengeluaran
+                </button>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 1: BERANDA (DASHBOARD)                 -->
+        <!-- ========================================== -->
+        <section id="tab-dashboard" class="space-y-5">
+            
+            <!-- Kartu Ringkasan Saldo Keluarga -->
+            <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-900 text-white p-6 shadow-xl shadow-emerald-900/15">
+                <div class="absolute -right-10 -top-10 w-44 h-44 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
+                <div class="absolute -left-10 -bottom-10 w-40 h-40 rounded-full bg-teal-400/10 blur-xl pointer-events-none"></div>
+
+                <div class="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                    <div>
+                        <div class="flex items-center gap-2 text-emerald-100 text-xs font-medium uppercase tracking-wider">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            <span>Saldo Bersih Keluarga (<span id="period-label">Bulan Ini</span>)</span>
+                        </div>
+                        <h2 id="summary-balance" class="text-3xl sm:text-4xl font-extrabold tracking-tight mt-2">Rp 0</h2>
+                        <p class="text-xs text-emerald-100/90 mt-1 flex items-center gap-1.5">
+                            <i class="fa-solid fa-rotate text-[10px]"></i>
+                            <span>Tersinkronisasi otomatis ke semua perangkat keluarga</span>
+                        </p>
+                    </div>
+
+                    <!-- Kotak Pemasukan & Pengeluaran -->
+                    <div class="grid grid-cols-2 gap-3 sm:min-w-[320px]">
+                        <div class="bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-3.5">
+                            <div class="flex items-center gap-2 text-emerald-200 text-xs font-medium">
+                                <div class="w-6 h-6 rounded-lg bg-emerald-400/20 flex items-center justify-center text-emerald-300">
+                                    <i class="fa-solid fa-arrow-down-long text-xs"></i>
+                                </div>
+                                <span>Pemasukan</span>
+                            </div>
+                            <p id="summary-income" class="text-base sm:text-lg font-bold mt-1.5 truncate">Rp 0</p>
+                        </div>
+
+                        <div class="bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-3.5">
+                            <div class="flex items-center gap-2 text-rose-200 text-xs font-medium">
+                                <div class="w-6 h-6 rounded-lg bg-rose-400/20 flex items-center justify-center text-rose-300">
+                                    <i class="fa-solid fa-arrow-up-long text-xs"></i>
+                                </div>
+                                <span>Pengeluaran</span>
+                            </div>
+                            <p id="summary-expense" class="text-base sm:text-lg font-bold mt-1.5 truncate">Rp 0</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grid Analisis: Pengeluaran per Kategori & Aktivitas per Anggota Keluarga -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                
+                <!-- Card 1: Pengeluaran per Kategori -->
+                <div class="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-sm">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-sm sm:text-base">Distribusi Pengeluaran</h3>
+                            <p class="text-xs text-slate-500">Berdasarkan kategori pengeluaran keluarga</p>
+                        </div>
+                        <div class="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+                            <i class="fa-solid fa-chart-pie"></i>
+                        </div>
+                    </div>
+                    <div id="category-breakdown-list" class="space-y-3">
+                        <!-- Diisi via JS -->
+                    </div>
+                </div>
+
+                <!-- Card 2: Aktivitas per Anggota Keluarga -->
+                <div class="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-sm">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-sm sm:text-base">Aktivitas Anggota Keluarga</h3>
+                            <p class="text-xs text-slate-500">Rekap pencatatan per anggota di kode keluarga ini</p>
+                        </div>
+                        <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                            <i class="fa-solid fa-users"></i>
+                        </div>
+                    </div>
+                    <div id="member-breakdown-list" class="space-y-3">
+                        <!-- Diisi via JS -->
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Transaksi Terbaru -->
+            <div class="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-sm">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-sm sm:text-base">Transaksi Keluarga Terbaru</h3>
+                        <p class="text-xs text-slate-500">Real-time update dari semua anggota keluarga</p>
+                    </div>
+                    <button onclick="window.app.switchTab('transactions')" class="text-xs font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
+                        <span>Lihat Semua</span>
+                        <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                    </button>
+                </div>
+                <div id="recent-transactions-list" class="divide-y divide-slate-100">
+                    <!-- Diisi via JS -->
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ========================================== -->
+        <!-- TAB 2: RIWAYAT TRANSAKSI LENGKAP           -->
+        <!-- ========================================== -->
+        <section id="tab-transactions" class="hidden space-y-4">
+            <div class="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-sm">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                    <div>
+                        <h2 class="font-bold text-slate-800 text-base sm:text-lg">Riwayat Transaksi Keluarga</h2>
+                        <p class="text-xs text-slate-500">Cari, filter, atau unduh laporan keuangan ke Excel/CSV</p>
+                    </div>
+                    <button onclick="window.app.exportCSV()" class="inline-flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-semibold transition-all">
+                        <i class="fa-solid fa-file-csv"></i> Download CSV
+                    </button>
+                </div>
+
+                <!-- Baris Filter & Pencarian -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-4">
+                    <div class="relative">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                        <input type="text" id="search-tx" oninput="window.app.renderAll()" placeholder="Cari catatan, anggota, dompet..." class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <select id="filter-type" onchange="window.app.renderAll()" class="bg-slate-50 border border-slate-200 text-slate-700 text-xs font-medium rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="all">Semua Tipe (Masuk & Keluar)</option>
+                        <option value="income">Hanya Pemasukan (+)</option>
+                        <option value="expense">Hanya Pengeluaran (-)</option>
+                    </select>
+                    <select id="filter-member" onchange="window.app.renderAll()" class="bg-slate-50 border border-slate-200 text-slate-700 text-xs font-medium rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="all">Semua Anggota Keluarga</option>
+                    </select>
+                </div>
+
+                <!-- Daftar Transaksi Lengkap -->
+                <div id="all-transactions-list" class="divide-y divide-slate-100">
+                    <!-- Diisi via JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- TAB 3: TARGET TABUNGAN & ANGGARAN          -->
+        <!-- ========================================== -->
+        <section id="tab-goals" class="hidden space-y-5">
+            <div class="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h2 class="font-bold text-slate-800 text-base sm:text-lg">Target Tabungan & Impian Keluarga</h2>
+                    <p class="text-xs text-slate-500">Pantau dana pendidikan anak, dana darurat, kurban, atau liburan bersama</p>
+                </div>
+                <button onclick="window.app.openModal('modal-goal')" class="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs font-semibold shadow-sm transition-all">
+                    <i class="fa-solid fa-bullseye"></i> Buat Target Baru
+                </button>
+            </div>
+
+            <div id="goals-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Diisi via JS -->
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- TAB 4: GAMES SUAMI ISTRI (COUPLE GAMES)    -->
+        <!-- ========================================== -->
+        <section id="tab-games" class="hidden space-y-5">
+            <!-- Header Banner Games Pasutri -->
+            <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-rose-500 via-pink-600 to-purple-800 text-white p-6 shadow-xl shadow-rose-900/15">
+                <div class="absolute -right-8 -top-8 w-40 h-40 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
+                <div class="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/20 backdrop-blur-sm">
+                            <i class="fa-solid fa-heart text-rose-200"></i> Zona Harmonis Suami Istri
+                        </span>
+                        <h2 class="text-xl sm:text-2xl font-extrabold mt-2">Games & Keintiman Pasutri</h2>
+                        <p class="text-xs text-rose-100 mt-1">Biar urusan keuangan tetap kompak dan hubungan makin mesra setiap hari</p>
+                    </div>
+                    <!-- Pilihan Mode Permainan -->
+                    <div class="flex bg-black/20 backdrop-blur-md p-1 rounded-2xl gap-1 self-start sm:self-center">
+                        <button onclick="window.app.switchGameMode('cards')" id="game-tab-cards" class="px-3 py-2 rounded-xl text-xs font-bold bg-white text-rose-600 shadow-sm transition-all">
+                            🎴 Kartu Cinta
+                        </button>
+                        <button onclick="window.app.switchGameMode('wheel')" id="game-tab-wheel" class="px-3 py-2 rounded-xl text-xs font-bold text-white/90 hover:text-white transition-all">
+                            🎡 Roda Gacha
+                        </button>
+                        <button onclick="window.app.switchGameMode('coupons')" id="game-tab-coupons" class="px-3 py-2 rounded-xl text-xs font-bold text-white/90 hover:text-white transition-all">
+                            🎟️ Kupon Cinta
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GAME 1: KARTU PILLOW TALK & TRUTH OR DARE PASUTRI -->
+            <div id="game-panel-cards" class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                <div class="lg:col-span-2 bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-base">Kartu Deep Talk & Truth or Dare</h3>
+                                <p class="text-xs text-slate-500">Pilih kategori kartu dan jawab bergantian bersama pasangan</p>
+                            </div>
+                            <select id="card-category-select" onchange="window.app.drawCoupleCard()" class="bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold rounded-xl px-3 py-2 focus:outline-none">
+                                <option value="romantis">💕 Romantis & Nostalgia</option>
+                                <option value="deeptalk">🌙 Deep Talk Rumah Tangga</option>
+                                <option value="keuangan">💰 Kompak Finansial & Impian</option>
+                                <option value="dare">🔥 Tantangan Manja (Dare)</option>
+                            </select>
+                        </div>
+
+                        <!-- Visual Kartu -->
+                        <div id="couple-card-box" class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-rose-50 via-pink-50 to-amber-50 border-2 border-rose-200 p-6 sm:p-8 min-h-[210px] flex flex-col items-center justify-center text-center transition-all duration-300">
+                            <span id="card-badge" class="px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-rose-600 text-white mb-3">
+                                💕 Romantis & Nostalgia
+                            </span>
+                            <p id="card-question-text" class="text-base sm:text-xl font-bold text-slate-800 leading-relaxed max-w-lg">
+                                "Hal sederhana apa yang pernah dilakukan pasanganmu yang diam-diam bikin kamu makin jatuh cinta sampai sekarang?"
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Tombol Aksi Kartu -->
+                    <div class="flex flex-wrap items-center justify-between gap-3 mt-5">
+                        <button onclick="window.app.drawCoupleCard()" class="flex-1 inline-flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white px-5 py-3 rounded-2xl text-xs sm:text-sm font-bold shadow-md shadow-rose-600/20 transition-all">
+                            <i class="fa-solid fa-shuffle"></i> Kocok Kartu Berikutnya
+                        </button>
+                        <button onclick="window.app.sendCardToPartner()" class="flex-1 inline-flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 active:scale-95 text-white px-4 py-3 rounded-2xl text-xs sm:text-sm font-bold transition-all">
+                            <i class="fa-solid fa-paper-plane"></i> Kirim ke HP Pasangan
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Kotak Pesan / Jawaban Pasangan Real-time -->
+                <div class="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-sm">Papan Pesan & Aktivitas Cinta</h3>
+                                <p class="text-xs text-slate-500">Tersinkronisasi ke HP Suami & Istri</p>
+                            </div>
+                            <span class="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+                                <i class="fa-solid fa-comments"></i>
+                            </span>
+                        </div>
+
+                        <div id="couple-feed-list" class="space-y-2.5 max-h-[240px] overflow-y-auto pr-1">
+                            <!-- Diisi via JS -->
+                        </div>
+                    </div>
+
+                    <form onsubmit="window.app.submitLoveNote(event)" class="mt-4 pt-3 border-t border-slate-100 flex gap-2">
+                        <input type="text" id="love-note-input" required placeholder="Kirim jawaban / pesan mesra..." class="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-rose-500">
+                        <button type="submit" class="bg-rose-600 hover:bg-rose-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold shrink-0">
+                            <i class="fa-solid fa-heart"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- GAME 2: RODA KEBERUNTUNGAN PASUTRI (SPIN WHEEL) -->
+            <div id="game-panel-wheel" class="hidden bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                    <div class="flex flex-col items-center">
+                        <div class="flex gap-2 mb-4 bg-slate-100 p-1 rounded-2xl">
+                            <button onclick="window.app.setWheelTopic('manja')" id="wheel-btn-manja" class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-rose-600 text-white transition-all">
+                                💆‍♀️ Hadiah Manja
+                            </button>
+                            <button onclick="window.app.setWheelTopic('tugas')" id="wheel-btn-tugas" class="px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-800 transition-all">
+                                🧹 Bagi Tugas Rumah
+                            </button>
+                            <button onclick="window.app.setWheelTopic('kencan')" id="wheel-btn-kencan" class="px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-800 transition-all">
+                                🍜 Ide Kencan Hemat
+                            </button>
+                        </div>
+
+                        <!-- Canvas Roda Putar -->
+                        <div class="relative w-64 h-64 sm:w-72 sm:h-72 flex items-center justify-center">
+                            <!-- Jarum Penunjuk Atas -->
+                            <div class="absolute -top-3 z-20 text-rose-600 text-2xl drop-shadow">
+                                <i class="fa-solid fa-location-pin"></i>
+                            </div>
+                            <canvas id="couple-wheel-canvas" width="280" height="280" class="w-full h-full rounded-full shadow-lg border-4 border-white transition-transform duration-[3500ms] ease-out"></canvas>
+                            <button onclick="window.app.spinCoupleWheel()" id="btn-spin-wheel" class="absolute z-10 w-16 h-16 rounded-full bg-white text-rose-600 font-extrabold text-xs shadow-lg border-4 border-rose-500 active:scale-90 transition-transform">
+                                PUTAR!
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4 text-center md:text-left">
+                        <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-100 text-rose-700">
+                            Hasil Putaran Roda Pasutri
+                        </span>
+                        <h3 class="text-lg sm:text-xl font-extrabold text-slate-800">Siapa yang Beruntung Hari Ini?</h3>
+                        <div id="wheel-result-box" class="p-5 rounded-2xl bg-rose-50/80 border border-rose-200 text-slate-800">
+                            <p class="text-xs text-slate-500">Klik tombol <strong>PUTAR!</strong> di tengah roda untuk mengundi tantangan atau hadiah manis untuk pasangan.</p>
+                            <p id="wheel-result-text" class="text-base sm:text-lg font-extrabold text-rose-700 mt-1">Belum Diputar</p>
+                        </div>
+                        <p class="text-xs text-slate-500">
+                            *Setiap hasil putaran otomatis tercatat di Papan Aktivitas Cinta agar pasanganmu bisa melihat buktinya!
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GAME 3: KUPON CINTA SUAMI ISTRI (CLOUD VOUCHERS) -->
+            <div id="game-panel-coupons" class="hidden space-y-4">
+                <div class="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-base">Dompet Kupon Cinta Suami-Istri</h3>
+                        <p class="text-xs text-slate-500">Hadiahkan kupon spesial yang bisa diklaim pasanganmu kapan saja (Tanpa menguras saldo tabungan!)</p>
+                    </div>
+                    <button onclick="window.app.createDefaultCoupons()" class="inline-flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm transition-all">
+                        <i class="fa-solid fa-ticket"></i> + Buat Paket Kupon Cinta
+                    </button>
+                </div>
+
+                <!-- Form Buat Kupon Kustom -->
+                <form onsubmit="window.app.submitCustomCoupon(event)" class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+                    <input type="text" id="coupon-title-input" required placeholder="Nama Kupon (Misal: Pijat Punggung 15 Menit)" class="sm:col-span-2 px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-rose-500">
+                    <select id="coupon-for-input" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700">
+                        <option value="Pasangan">🎁 Untuk: Suami / Istri</option>
+                        <option value="Suami">👨 Khusus Untuk Suami</option>
+                        <option value="Istri">👩 Khusus Untuk Istri</option>
+                    </select>
+                    <button type="submit" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold">
+                        Kirim Kupon Baru
+                    </button>
+                </form>
+
+                <!-- Daftar Kupon Cinta -->
+                <div id="coupons-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Diisi via JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- TAB 5: KELUARGA, GITHUB & PWA INSTALLER    -->
+        <!-- ========================================== -->
+        <section id="tab-settings" class="hidden space-y-5">
+            
+            <!-- Kartu Pengaturan Kode Keluarga & Sinkronisasi -->
+            <div class="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-sm">
+                <div class="flex items-start justify-between gap-4 mb-4">
+                    <div>
+                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700">Sinkronisasi Multi-Anggota</span>
+                        <h2 class="font-bold text-slate-800 text-base sm:text-lg mt-2">Pengaturan Kode Keluarga & Profil</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">Bagikan <strong>Kode Keluarga</strong> yang sama ke HP Suami, Istri, atau Anak agar seluruh data keuangan menyatu secara real-time.</p>
+                    </div>
+                    <button onclick="window.app.openModal('modal-profile')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-semibold shrink-0">
+                        Ubah Profil / Kode
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200/60">
+                    <div>
+                        <span class="text-[11px] text-slate-400 font-medium block">Kode Keluarga Aktif</span>
+                        <div class="flex items-center gap-2 mt-1">
+                            <span id="settings-family-code" class="font-extrabold text-sm text-emerald-700 font-mono">KELUARGA-01</span>
+                            <button onclick="window.app.copyFamilyCode()" class="text-xs text-slate-500 hover:text-emerald-600" title="Salin Kode">
+                                <i class="fa-regular fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="text-[11px] text-slate-400 font-medium block">Profil Anda Saat Ini</span>
+                        <span id="settings-member-profile" class="font-bold text-sm text-slate-800 mt-1 block">👨 Ayah (Kepala Keluarga)</span>
+                    </div>
+                    <div>
+                        <span class="text-[11px] text-slate-400 font-medium block">ID Perangkat Cloud (User ID)</span>
+                        <span id="settings-user-id" class="font-mono text-[11px] text-slate-600 mt-1 block break-all">Menunggu koneksi...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kartu Panduan Upload GitHub Pages & Download File PWA -->
+            <div class="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-sm space-y-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-2xl bg-slate-900 text-white flex items-center justify-center text-xl shrink-0">
+                        <i class="fa-brands fa-github"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-base">Siap Upload ke GitHub Pages & Install di HP (PWA)</h3>
+                        <p class="text-xs text-slate-500">Agar aplikasi bisa diinstal layaknya aplikasi Play Store / App Store di Android & iPhone</p>
+                    </div>
+                </div>
+
+                <div class="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-4 text-xs text-slate-700 space-y-2">
+                    <p class="font-bold text-emerald-900 flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle-check text-emerald-600"></i>
+                        Langkah Mudah Hosting Gratis di GitHub Pages:
+                    </p>
+                    <ol class="list-decimal list-inside space-y-1.5 text-slate-600 leading-relaxed">
+                        <li>Simpan kode ini sebagai file bernama <code class="bg-white px-1.5 py-0.5 rounded border border-emerald-200 font-mono text-emerald-800">index.html</code>.</li>
+                        <li>Klik dua tombol di bawah untuk mengunduh file <code class="bg-white px-1.5 py-0.5 rounded border border-emerald-200 font-mono text-emerald-800">manifest.json</code> dan <code class="bg-white px-1.5 py-0.5 rounded border border-emerald-200 font-mono text-emerald-800">sw.js</code> (Service Worker).</li>
+                        <li>Upload ketiga file (<code class="font-mono">index.html</code>, <code class="font-mono">manifest.json</code>, <code class="font-mono">sw.js</code>) ke repositori GitHub Anda, lalu aktifkan fitur <strong>GitHub Pages</strong> di menu Settings.</li>
+                        <li>Buka link GitHub Pages Anda di Chrome (Android) atau Safari (iOS), lalu pilih <strong>"Tambahkan ke Layar Utama / Install Aplikasi"</strong>.</li>
+                    </ol>
+                </div>
+
+                <!-- Tombol Download File Pendukung PWA -->
+                <div class="flex flex-wrap gap-3">
+                    <button onclick="window.app.downloadManifestFile()" class="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs font-semibold transition-all shadow-sm">
+                        <i class="fa-solid fa-file-code"></i> 1. Download manifest.json
+                    </button>
+                    <button onclick="window.app.downloadServiceWorkerFile()" class="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 bg-teal-700 hover:bg-teal-800 text-white px-4 py-2.5 rounded-xl text-xs font-semibold transition-all shadow-sm">
+                        <i class="fa-solid fa-gears"></i> 2. Download sw.js (Service Worker)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Kartu Kustomisasi Firebase Config untuk GitHub Eksternal -->
+            <div class="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-sm space-y-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-sm sm:text-base">Konfigurasi Database & Rules Firebase Pribadi</h3>
+                        <p class="text-xs text-slate-500">Panduan pengaturan Firebase Console saat aplikasi di-upload ke GitHub Pages pribadi Anda.</p>
+                    </div>
+                </div>
+
+                <!-- Langkah Setup Firebase -->
+                <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 text-xs text-slate-700 space-y-2">
+                    <p class="font-bold text-slate-800 flex items-center gap-1.5">
+                        <i class="fa-solid fa-fire text-amber-500"></i>
+                        3 Langkah Wajib di Firebase Console (console.firebase.google.com):
+                    </p>
+                    <ol class="list-decimal list-inside space-y-1.5 text-slate-600 leading-relaxed">
+                        <li>Buka menu <strong>Build &rarr; Authentication &rarr; Sign-in method</strong>, lalu aktifkan provider <strong>Anonymous</strong> (Wajib agar anggota keluarga bisa langsung masuk tanpa ribet daftar email).</li>
+                        <li>Buka menu <strong>Build &rarr; Firestore Database</strong>, klik <strong>Create Database</strong>, lalu masuk ke tab <strong>Rules</strong>.</li>
+                        <li>Salin & tempel kode <strong>Firestore Rules</strong> di bawah ini ke tab Rules Anda, lalu klik <strong>Publish</strong>:</li>
+                    </ol>
+                </div>
+
+                <!-- Kotak Kode Firestore Rules -->
+                <div class="relative bg-slate-900 text-emerald-400 rounded-2xl p-4 font-mono text-[11px] leading-relaxed overflow-x-auto">
+                    <button onclick="window.app.copyFirebaseRules()" class="absolute top-3 right-3 bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-xl text-[10px] font-sans font-semibold flex items-center gap-1.5 transition-all">
+                        <i class="fa-regular fa-copy"></i> Salin Rules
+                    </button>
+<pre id="firebase-rules-code" class="text-xs">rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Mengizinkan anggota keluarga yang terautentikasi (Anonymous Auth)
+    // membaca & menyimpan transaksi, tabungan, dan games pasutri
+    match /artifacts/{appId}/public/data/{collectionName}/{docId} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}</pre>
+                </div>
+
+                <div class="pt-2 border-t border-slate-100">
+                    <label class="block text-xs font-semibold text-slate-700 mb-1.5">Uji Coba / Hubungkan Firebase Config Anda:</label>
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <input type="text" id="custom-firebase-input" placeholder='Tempel JSON firebaseConfig Anda di sini: {"apiKey":"...", "projectId":"..."}' class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <button onclick="window.app.applyCustomFirebase()" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-semibold shrink-0">
+                            Hubungkan Firebase Baru
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- ========================================== -->
+    <!-- BOTTOM NAVIGATION BAR (ALA APLIKASI HP)    -->
+    <!-- ========================================== -->
+    <nav class="fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200/90 shadow-lg">
+        <div class="max-w-xl mx-auto px-1.5 py-1.5 grid grid-cols-6 items-center">
+            <button onclick="window.app.switchTab('dashboard')" id="nav-dashboard" class="nav-btn flex flex-col items-center justify-center py-1.5 text-emerald-600 font-semibold transition-all">
+                <i class="fa-solid fa-house text-base mb-1"></i>
+                <span class="text-[10px]">Beranda</span>
+            </button>
+
+            <button onclick="window.app.switchTab('transactions')" id="nav-transactions" class="nav-btn flex flex-col items-center justify-center py-1.5 text-slate-400 hover:text-slate-600 font-medium transition-all">
+                <i class="fa-solid fa-receipt text-base mb-1"></i>
+                <span class="text-[10px]">Transaksi</span>
+            </button>
+
+            <!-- Tombol Tengah Floating (+) -->
+            <div class="flex justify-center -mt-5">
+                <button onclick="window.app.openTransactionModal('expense')" class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-lg shadow-emerald-600/30 flex items-center justify-center text-lg active:scale-90 transition-transform" title="Catat Transaksi">
+                    <i class="fa-solid fa-plus"></i>
+                </button>
+            </div>
+
+            <button onclick="window.app.switchTab('goals')" id="nav-goals" class="nav-btn flex flex-col items-center justify-center py-1.5 text-slate-400 hover:text-slate-600 font-medium transition-all">
+                <i class="fa-solid fa-piggy-bank text-base mb-1"></i>
+                <span class="text-[10px]">Tabungan</span>
+            </button>
+
+            <button onclick="window.app.switchTab('games')" id="nav-games" class="nav-btn flex flex-col items-center justify-center py-1.5 text-slate-400 hover:text-rose-500 font-medium transition-all">
+                <i class="fa-solid fa-heart text-base mb-1"></i>
+                <span class="text-[10px]">Games</span>
+            </button>
+
+            <button onclick="window.app.switchTab('settings')" id="nav-settings" class="nav-btn flex flex-col items-center justify-center py-1.5 text-slate-400 hover:text-slate-600 font-medium transition-all">
+                <i class="fa-solid fa-users-gear text-base mb-1"></i>
+                <span class="text-[10px]">Keluarga</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ========================================== -->
+    <!-- MODAL 1: TAMBAH TRANSAKSI (MASUK/KELUAR)   -->
+    <!-- ========================================== -->
+    <div id="modal-transaction" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl animate-fade-in">
+            <div class="flex items-center justify-between mb-4">
+                <h3 id="modal-tx-title" class="font-bold text-lg text-slate-800">Catat Transaksi</h3>
+                <button onclick="window.app.closeModal('modal-transaction')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form id="form-transaction" onsubmit="window.app.submitTransaction(event)" class="space-y-4">
+                <!-- Switch Tipe Transaksi -->
+                <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-2xl">
+                    <button type="button" id="btn-type-income" onclick="window.app.setTxType('income')" class="py-2 rounded-xl text-xs font-bold transition-all">
+                        + Pemasukan
+                    </button>
+                    <button type="button" id="btn-type-expense" onclick="window.app.setTxType('expense')" class="py-2 rounded-xl text-xs font-bold transition-all">
+                        - Pengeluaran
+                    </button>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nominal (Rp)</label>
+                    <input type="number" id="tx-amount" required min="1" placeholder="Contoh: 150000" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-lg font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Kategori</label>
+                        <select id="tx-category" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <!-- Diisi via JS sesuai tipe -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Dompet / Metode</label>
+                        <select id="tx-wallet" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="Tunai">💵 Kas Tunai</option>
+                            <option value="Bank BCA">🏦 Bank BCA</option>
+                            <option value="Bank Mandiri">🏦 Bank Mandiri</option>
+                            <option value="Bank BRI/BNI">🏦 Bank BRI/BNI</option>
+                            <option value="GoPay/OVO/Dana">📱 E-Wallet (GoPay/OVO/Dana)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Tanggal</label>
+                        <input type="date" id="tx-date" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Dicatat Oleh</label>
+                        <input type="text" id="tx-member-readonly" readonly class="w-full px-3 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Catatan / Keterangan</label>
+                    <input type="text" id="tx-note" required placeholder="Contoh: Belanja sayur & lauk mingguan" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+
+                <button type="submit" id="btn-submit-tx" class="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-lg shadow-emerald-600/20 transition-all">
+                    Simpan ke Cloud Keluarga
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL 2: PROFIL ANGGOTA & KODE KELUARGA    -->
+    <!-- ========================================== -->
+    <div id="modal-profile" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="font-bold text-lg text-slate-800">Identitas & Kode Keluarga</h3>
+                    <p class="text-xs text-slate-500">Masuk ke ruang keluarga yang sama agar data sinkron</p>
+                </div>
+                <button onclick="window.app.closeModal('modal-profile')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form onsubmit="window.app.saveProfile(event)" class="space-y-4">
+                <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-3.5">
+                    <label class="block text-xs font-bold text-emerald-900 mb-1">Kode Keluarga (Family Room ID)</label>
+                    <input type="text" id="input-family-code" required placeholder="Contoh: KELUARGA-BUDI-88" class="w-full px-3.5 py-2.5 bg-white border border-emerald-300 rounded-xl text-sm font-extrabold uppercase tracking-wider text-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <p class="text-[11px] text-emerald-700 mt-1.5">
+                        *Semua anggota keluarga yang mengetik Kode Keluarga yang sama akan melihat & mengedit data keuangan yang sama secara real-time.
+                    </p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Peran di Keluarga</label>
+                    <select id="input-member-role" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="👨|Ayah">👨 Ayah / Suami</option>
+                        <option value="👩|Ibu">👩 Ibu / Istri</option>
+                        <option value="👦|Kakak">👦 Anak (Kakak)</option>
+                        <option value="👧|Adik">👧 Anak (Adik)</option>
+                        <option value="👴|Kakek/Nenek">👴 Kakek / Nenek</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Panggilan Anda</label>
+                    <input type="text" id="input-member-name" required placeholder="Contoh: Ayah Budi / Bunda Sari" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+
+                <button type="submit" class="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-lg shadow-emerald-600/20 transition-all">
+                    Terapkan & Sinkronkan Data
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL 3: TAMBAH TARGET TABUNGAN KELUARGA   -->
+    <!-- ========================================== -->
+    <div id="modal-goal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-bold text-lg text-slate-800">Buat Target Tabungan Keluarga</h3>
+                <button onclick="window.app.closeModal('modal-goal')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form onsubmit="window.app.submitGoal(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Target Impian</label>
+                    <input type="text" id="goal-title" required placeholder="Contoh: Dana Darurat / Liburan Keluarga / Pendidikan Anak" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Target Nominal (Rp)</label>
+                        <input type="number" id="goal-target" required min="10000" placeholder="10000000" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Terkumpul Saat Ini (Rp)</label>
+                        <input type="number" id="goal-current" required min="0" value="0" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800">
+                    </div>
+                </div>
+                <button type="submit" class="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-lg shadow-emerald-600/20">
+                    Simpan Target Keluarga
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL 4: TAMBAH SALDO KE TARGET TABUNGAN   -->
+    <!-- ========================================== -->
+    <div id="modal-topup-goal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white w-full max-w-sm rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl">
+            <div class="flex items-center justify-between mb-3">
+                <h3 id="topup-goal-name" class="font-bold text-base text-slate-800">Tambah Tabungan</h3>
+                <button onclick="window.app.closeModal('modal-topup-goal')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <form onsubmit="window.app.submitTopupGoal(event)" class="space-y-4">
+                <input type="hidden" id="topup-goal-id">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nominal Setoran Tabungan (Rp)</label>
+                    <input type="number" id="topup-goal-amount" required min="1000" placeholder="500000" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-base font-bold text-slate-800">
+                </div>
+                <button type="submit" class="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs">
+                    Tambahkan Saldo
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- FIREBASE & APPLICATION SCRIPT              -->
+    <!-- ========================================== -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // =====================================================
+        // STATE MANAJEMEN APLIKASI (IN-MEMORY + CLOUD FIRESTORE)
+        // =====================================================
+        const state = {
+            user: null,
+            db: null,
+            appId: typeof __app_id !== 'undefined' ? __app_id : 'dompet-keluarga-app',
+            familyCode: 'KELUARGA-01',
+            memberName: 'Ayah',
+            memberRole: 'Ayah',
+            memberAvatar: '👨',
+            activeTxType: 'expense',
+            transactions: [],
+            goals: [],
+            coupleFeed: [],
+            coupleCoupons: [],
+            currentCardText: '"Hal sederhana apa yang pernah dilakukan pasanganmu yang diam-diam bikin kamu makin jatuh cinta sampai sekarang?"',
+            wheelTopic: 'manja',
+            wheelRotation: 0,
+            isSpinning: false,
+            unsubscribeTx: null,
+            unsubscribeGoals: null,
+            unsubscribeGames: null,
+            deferredInstallPrompt: null
+        };
+
+        // DATA PERTANYAAN & TANTANGAN SUAMI ISTRI
+        const COUPLE_CARDS = {
+            romantis: [
+                "Hal sederhana apa yang pernah dilakukan pasanganmu yang diam-diam bikin kamu makin jatuh cinta sampai sekarang?",
+                "Sebutkan 3 hal dari diri pasanganmu yang paling kamu syukuri minggu ini!",
+                "Momen kebersamaan kita mana yang paling ingin kamu ulang kembali jika punya mesin waktu?",
+                "Apa kebiasaan kecil pasanganmu yang menurutmu paling menggemaskan?",
+                "Kapan terakhir kali kamu merasa sangat bangga memiliki dia sebagai pasangan hidupmu?",
+                "Jika kita punya waktu libur berdua 24 jam tanpa gangguan, kamu ingin kita ngapain aja?"
+            ],
+            deeptalk: [
+                "Apa satu hal yang bisa aku lakukan minggu ini agar beban pikiranmu terasa lebih ringan?",
+                "Dalam pernikahan kita sejauh ini, pelajaran berharga apa yang membuat kita makin dewasa?",
+                "Apakah ada hal yang akhir-akhir ini ingin kamu ceritakan tapi belum sempat terucap?",
+                "Bagaimana cara terbaik menunjukkan rasa sayang kepadamu saat kamu sedang lelah atau stres?",
+                "Apa kebiasaan baik yang ingin kita bangun bersama di rumah mulai bulan ini?"
+            ],
+            keuangan: [
+                "Sebutkan 1 impian keluarga kita dalam 3 tahun ke depan yang paling ingin kita wujudkan bersama!",
+                "Pengeluaran apa bulan ini yang menurutmu paling membawa kebahagiaan buat keluarga kita?",
+                "Jika kita mendapat rezeki nomplok Rp 10 Juta hari ini, bagaimana pembagian ideal menurutmu?",
+                "Hal hemat apa yang ternyata tetap seru saat kita lakukan berdua?",
+                "Apresiasi apa yang pantas kita berikan untuk diri kita karena sudah kompak mengatur keuangan keluarga?"
+            ],
+            dare: [
+                "TANTANGAN: Tatap mata pasanganmu selama 30 detik sambil pegang tangannya dan ucapkan 'Terima kasih sudah berjuang bersamaku'.",
+                "TANTANGAN: Berikan pijatan lembut di bahu atau kepala pasanganmu selama 3 menit sekarang juga!",
+                "TANTANGAN: Peluk pasanganmu dengan erat selama 1 menit penuh tanpa memegang HP.",
+                "TANTANGAN: Buatkan minuman favorit pasanganmu (kopi/teh/air hangat) dengan penuh cinta hari ini!",
+                "TANTANGAN: Bisikkan 3 pujian paling tulus di telinga pasanganmu sekarang juga!"
+            ]
+        };
+
+        const WHEEL_TOPICS = {
+            manja: [
+                { label: "Pijat 15 Menit", color: "#f43f5e" },
+                { label: "Peluk 2 Menit", color: "#ec4899" },
+                { label: "Traktir Jajan", color: "#8b5cf6" },
+                { label: "Dibikin Kopi/Teh", color: "#10b981" },
+                { label: "Bebas Pilih Film", color: "#f59e0b" },
+                { label: "Cium Kening 5x", color: "#3b82f6" }
+            ],
+            tugas: [
+                { label: "Cuci Piring", color: "#10b981" },
+                { label: "Lipat Baju", color: "#3b82f6" },
+                { label: "Sapu & Pel", color: "#f59e0b" },
+                { label: "Bikin Sarapan", color: "#ec4899" },
+                { label: "Tidurkan Anak", color: "#8b5cf6" },
+                { label: "Bebas Tugas!", color: "#f43f5e" }
+            ],
+            kencan: [
+                { label: "Jalan Malam Berdua", color: "#8b5cf6" },
+                { label: "Masak Bareng", color: "#10b981" },
+                { label: "Nonton di Rumah", color: "#f43f5e" },
+                { label: "Kuliner Kaki Lima", color: "#f59e0b" },
+                { label: "Ngopi Sore", color: "#3b82f6" },
+                { label: "Deep Talk Balkon", color: "#ec4899" }
+            ]
+        };
+
+        const CATEGORIES = {
+            income: [
+                { id: 'Gaji & Tunjangan', icon: '💼', color: '#10b981' },
+                { id: 'Usaha & Bisnis', icon: '🏪', color: '#059669' },
+                { id: 'Bonus & THR', icon: '🎁', color: '#14b8a6' },
+                { id: 'Hasil Investasi', icon: '📈', color: '#0d9488' },
+                { id: 'Pemasukan Lainnya', icon: '✨', color: '#34d399' }
+            ],
+            expense: [
+                { id: 'Dapur & Makanan', icon: '🍲', color: '#f43f5e' },
+                { id: 'Tagihan & Listrik/Air', icon: '⚡', color: '#f59e0b' },
+                { id: 'Pendidikan Anak', icon: '🎓', color: '#6366f1' },
+                { id: 'Transportasi & BBM', icon: '🚗', color: '#ec4899' },
+                { id: 'Kesehatan & Obat', icon: '🏥', color: '#14b8a6' },
+                { id: 'Belanja Rumah Tangga', icon: '🛒', color: '#8b5cf6' },
+                { id: 'Sedekah & Sosial', icon: '🤲', color: '#10b981' },
+                { id: 'Hiburan Keluarga', icon: '🎡', color: '#3b82f6' }
+            ]
+        };
+
+        // =====================================================
+        // UTILITAS FORMAT RUPIAH & TANGGAL
+        // =====================================================
+        function formatRupiah(num) {
+            const n = Number(num) || 0;
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(n);
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgClass = type === 'error' ? 'bg-rose-600' : (type === 'info' ? 'bg-slate-800' : 'bg-emerald-600');
+            const iconClass = type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-check';
+
+            toast.className = `${bgClass} text-white px-4 py-3 rounded-2xl shadow-lg flex items-center gap-2.5 text-xs font-semibold pointer-events-auto transition-all duration-300`;
+            toast.innerHTML = `<i class="fa-solid ${iconClass} text-sm"></i><span>${message}</span>`;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3200);
+        }
+
+        // =====================================================
+        // SETUP PWA (MANIFEST & SERVICE WORKER GENERATOR)
+        // =====================================================
+        function getManifestObject() {
+            return {
+                name: "DompetKeluarga - Keuangan Keluarga Online",
+                short_name: "DompetKeluarga",
+                description: "Aplikasi Keuangan Keluarga Real-time berbasis Cloud & PWA",
+                start_url: "./index.html",
+                display: "standalone",
+                background_color: "#f8fafc",
+                theme_color: "#059669",
+                orientation: "portrait-primary",
+                icons: [
+                    {
+                        src: "https://placehold.co/192x192/059669/ffffff.png?text=DK",
+                        sizes: "192x192",
+                        type: "image/png",
+                        purpose: "any maskable"
+                    },
+                    {
+                        src: "https://placehold.co/512x512/059669/ffffff.png?text=DK",
+                        sizes: "512x512",
+                        type: "image/png",
+                        purpose: "any maskable"
+                    }
+                ]
+            };
+        }
+
+        function initPWA() {
+            // 1. Pasang Dynamic Manifest Data URL
+            const manifestObj = getManifestObject();
+            const manifestStr = JSON.stringify(manifestObj, null, 2);
+            const manifestBlob = new Blob([manifestStr], { type: 'application/json' });
+            const manifestURL = URL.createObjectURL(manifestBlob);
+            document.getElementById('pwa-manifest').setAttribute('href', manifestURL);
+
+            // 2. Tangkap event beforeinstallprompt untuk tombol Install Aplikasi
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                state.deferredInstallPrompt = e;
+                const btnInstall = document.getElementById('btn-install-pwa');
+                btnInstall.classList.remove('hidden');
+                btnInstall.classList.add('inline-flex');
+            });
+
+            // 3. Coba registrasi sw.js jika di-hosting di GitHub Pages
+            if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+                navigator.serviceWorker.register('./sw.js').catch(() => {
+                    // Normal jika sw.js belum diupload ke root GitHub
+                });
+            }
+        }
+
+        // =====================================================
+        // KONEKSI FIREBASE CLOUD (MENGIKUTI ATURAN FIRESTORE)
+        // =====================================================
+        async function initFirebaseConnection(customConfigObj = null) {
+            try {
+                let firebaseConfig = customConfigObj;
+                if (!firebaseConfig && typeof __firebase_config !== 'undefined' && __firebase_config) {
+                    firebaseConfig = JSON.parse(__firebase_config);
+                }
+
+                if (!firebaseConfig) {
+                    updateCloudBadge('offline', 'Mode Lokal (Siap GitHub)');
+                    return;
+                }
+
+                const app = initializeApp(firebaseConfig, customConfigObj ? 'custom-' + Date.now() : undefined);
+                const auth = getAuth(app);
+                state.db = getFirestore(app);
+
+                // RULE 3: Auth Before Queries
+                if (!customConfigObj && typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                onAuthStateChanged(auth, (user) => {
+                    state.user = user;
+                    if (user) {
+                        document.getElementById('settings-user-id').textContent = user.uid;
+                        updateCloudBadge('online', 'Cloud Aktif');
+                        startRealtimeListeners();
+                    }
+                });
+            } catch (err) {
+                console.error("Firebase Init Error:", err);
+                updateCloudBadge('offline', 'Offline Mode');
+            }
+        }
+
+        function updateCloudBadge(status, label) {
+            const badge = document.getElementById('cloud-badge');
+            if (status === 'online') {
+                badge.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800";
+                badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> ${label}`;
+            } else {
+                badge.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800";
+                badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> ${label}`;
+            }
+        }
+
+        // =====================================================
+        // REAL-TIME LISTENERS (PUBLIC PATHS SESUAI RULE 1 & 2)
+        // =====================================================
+        function startRealtimeListeners() {
+            if (!state.user || !state.db) return;
+
+            if (state.unsubscribeTx) state.unsubscribeTx();
+            if (state.unsubscribeGoals) state.unsubscribeGoals();
+            if (state.unsubscribeGames) state.unsubscribeGames();
+
+            // RULE 1: Gunakan /artifacts/{appId}/public/data/{collectionName}
+            const txColRef = collection(state.db, 'artifacts', state.appId, 'public', 'data', 'family_transactions');
+            const goalsColRef = collection(state.db, 'artifacts', state.appId, 'public', 'data', 'family_goals');
+            const gamesColRef = collection(state.db, 'artifacts', state.appId, 'public', 'data', 'family_couple_games');
+
+            // RULE 2: Tanpa orderBy/where kompleks, filter berdasarkan familyCode di memori JS
+            state.unsubscribeTx = onSnapshot(
+                txColRef,
+                (snapshot) => {
+                    const allItems = [];
+                    snapshot.forEach((docSnap) => {
+                        const data = docSnap.data();
+                        if ((data.familyCode || 'KELUARGA-01').toUpperCase() === state.familyCode.toUpperCase()) {
+                            allItems.push({ id: docSnap.id, ...data });
+                        }
+                    });
+                    // Sortir dari terbaru ke terlama di memori JavaScript
+                    allItems.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                    state.transactions = allItems;
+                    renderAll();
+                },
+                (error) => {
+                    console.error("Error listening transactions:", error);
+                    showToast("Gagal memuat transaksi real-time", "error");
+                }
+            );
+
+            state.unsubscribeGoals = onSnapshot(
+                goalsColRef,
+                (snapshot) => {
+                    const allGoals = [];
+                    snapshot.forEach((docSnap) => {
+                        const data = docSnap.data();
+                        if ((data.familyCode || 'KELUARGA-01').toUpperCase() === state.familyCode.toUpperCase()) {
+                            allGoals.push({ id: docSnap.id, ...data });
+                        }
+                    });
+                    allGoals.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                    state.goals = allGoals;
+                    renderGoals();
+                },
+                (error) => {
+                    console.error("Error listening goals:", error);
+                }
+            );
+
+            state.unsubscribeGames = onSnapshot(
+                gamesColRef,
+                (snapshot) => {
+                    const feedItems = [];
+                    const couponItems = [];
+                    snapshot.forEach((docSnap) => {
+                        const data = docSnap.data();
+                        if ((data.familyCode || 'KELUARGA-01').toUpperCase() === state.familyCode.toUpperCase()) {
+                            if (data.itemType === 'coupon') {
+                                couponItems.push({ id: docSnap.id, ...data });
+                            } else {
+                                feedItems.push({ id: docSnap.id, ...data });
+                            }
+                        }
+                    });
+                    feedItems.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                    couponItems.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                    state.coupleFeed = feedItems;
+                    state.coupleCoupons = couponItems;
+                    renderCoupleGames();
+                },
+                (error) => {
+                    console.error("Error listening couple games:", error);
+                }
+            );
+        }
+
+        // =====================================================
+        // OPERASI CRUD TRANSAKSI & TABUNGAN
+        // =====================================================
+        async function submitTransaction(e) {
+            e.preventDefault();
+            const amount = Number(document.getElementById('tx-amount').value);
+            const category = document.getElementById('tx-category').value;
+            const wallet = document.getElementById('tx-wallet').value;
+            const dateStr = document.getElementById('tx-date').value;
+            const note = document.getElementById('tx-note').value.trim();
+
+            if (!amount || amount <= 0) {
+                showToast("Masukkan nominal yang valid", "error");
+                return;
+            }
+
+            const newTx = {
+                familyCode: state.familyCode.toUpperCase(),
+                type: state.activeTxType,
+                amount: amount,
+                category: category,
+                wallet: wallet,
+                date: dateStr,
+                note: note,
+                memberName: state.memberName,
+                memberRole: state.memberRole,
+                memberAvatar: state.memberAvatar,
+                createdByUid: state.user ? state.user.uid : 'local-user',
+                createdAt: Date.now()
+            };
+
+            closeModal('modal-transaction');
+            document.getElementById('form-transaction').reset();
+            setDefaultDate();
+
+            if (state.user && state.db) {
+                try {
+                    const txColRef = collection(state.db, 'artifacts', state.appId, 'public', 'data', 'family_transactions');
+                    await addDoc(txColRef, newTx);
+                    showToast("Transaksi tersimpan & disinkronkan ke keluarga!");
+                } catch (err) {
+                    console.error("Save error:", err);
+                    showToast("Gagal menyimpan ke Cloud", "error");
+                }
+            } else {
+                state.transactions.unshift({ id: 'local-' + Date.now(), ...newTx });
+                renderAll();
+                showToast("Transaksi disimpan di sesi ini");
+            }
+        }
+
+        async function deleteTransaction(txId) {
+            if (state.user && state.db && !String(txId).startsWith('local-')) {
+                try {
+                    const docRef = doc(state.db, 'artifacts', state.appId, 'public', 'data', 'family_transactions', txId);
+                    await deleteDoc(docRef);
+                    showToast("Transaksi dihapus dari Cloud Keluarga", "info");
+                } catch (err) {
+                    console.error("Delete error:", err);
+                    showToast("Gagal menghapus transaksi", "error");
+                }
+            } else {
+                state.transactions = state.transactions.filter(t => t.id !== txId);
+                renderAll();
+                showToast("Transaksi dihapus", "info");
+            }
+        }
+
+        async function submitGoal(e) {
+            e.preventDefault();
+            const title = document.getElementById('goal-title').value.trim();
+            const targetAmount = Number(document.getElementById('goal-target').value);
+            const currentAmount = Number(document.getElementById('goal-current').value) || 0;
+
+            const newGoal = {
+                familyCode: state.familyCode.toUpperCase(),
+                title,
+                targetAmount,
+                currentAmount,
+                createdBy: state.memberName,
+                createdAt: Date.now()
+            };
+
+            closeModal('modal-goal');
+            e.target.reset();
+
+            if (state.user && state.db) {
+                try {
+                    const goalsColRef = collection(state.db, 'artifacts', state.appId, 'public', 'data', 'family_goals');
+                    await addDoc(goalsColRef, newGoal);
+                    showToast("Target tabungan keluarga berhasil dibuat!");
+                } catch (err) {
+                    console.error(err);
+                    showToast("Gagal menyimpan target", "error");
+                }
+            } else {
+                state.goals.unshift({ id: 'local-goal-' + Date.now(), ...newGoal });
+                renderGoals();
+                showToast("Target tabungan ditambahkan");
+            }
+        }
+
+        async function submitTopupGoal(e) {
+            e.preventDefault();
+            const goalId = document.getElementById('topup-goal-id').value;
+            const addAmount = Number(document.getElementById('topup-goal-amount').value) || 0;
+            const targetGoal = state.goals.find(g => g.id === goalId);
+            if (!targetGoal) return;
+
+            const updatedAmount = (Number(targetGoal.currentAmount) || 0) + addAmount;
+            closeModal('modal-topup-goal');
+            e.target.reset();
+
+            if (state.user && state.db && !String(goalId).startsWith('local-')) {
+                try {
+                    const docRef = doc(state.db, 'artifacts', state.appId, 'public', 'data', 'family_goals', goalId);
+                    await updateDoc(docRef, { currentAmount: updatedAmount });
+                    showToast(`Berhasil menambah ${formatRupiah(addAmount)} ke tabungan!`);
+                } catch (err) {
+                    console.error(err);
+                    showToast("Gagal memperbarui tabungan", "error");
+                }
+            } else {
+                targetGoal.currentAmount = updatedAmount;
+                renderGoals();
+                showToast("Saldo tabungan diperbarui!");
+            }
+        }
+
+        async function deleteGoal(goalId) {
+            if (state.user && state.db && !String(goalId).startsWith('local-')) {
+                try {
+                    const docRef = doc(state.db, 'artifacts', state.appId, 'public', 'data', 'family_goals', goalId);
+                    await deleteDoc(docRef);
+                    showToast("Target tabungan dihapus", "info");
+                } catch (err) {
+                    console.error(err);
+                }
+            } else {
+                state.goals = state.goals.filter(g => g.id !== goalId);
+                renderGoals();
+            }
+        }
+
+        // =====================================================
+        // RENDERING UI & GRAFIK
+        // =====================================================
+        function getFilteredTransactionsByPeriod() {
+            const monthVal = document.getElementById('filter-month').value;
+            const yearVal = Number(document.getElementById('filter-year').value);
+
+            return state.transactions.filter(tx => {
+                if (!tx.date) return true;
+                const d = new Date(tx.date);
+                const matchYear = d.getFullYear() === yearVal;
+                const matchMonth = monthVal === 'all' ? true : d.getMonth() === Number(monthVal);
+                return matchYear && matchMonth;
+            });
+        }
+
+        function renderAll() {
+            const periodTxs = getFilteredTransactionsByPeriod();
+
+            // 1. Hitung Ringkasan Saldo
+            let totalIncome = 0;
+            let totalExpense = 0;
+            periodTxs.forEach(tx => {
+                if (tx.type === 'income') totalIncome += Number(tx.amount) || 0;
+                else totalExpense += Number(tx.amount) || 0;
+            });
+            const netBalance = totalIncome - totalExpense;
+
+            document.getElementById('summary-balance').textContent = formatRupiah(netBalance);
+            document.getElementById('summary-income').textContent = formatRupiah(totalIncome);
+            document.getElementById('summary-expense').textContent = formatRupiah(totalExpense);
+
+            // Update label periode
+            const monthSelect = document.getElementById('filter-month');
+            const yearSelect = document.getElementById('filter-year');
+            const monthText = monthSelect.options[monthSelect.selectedIndex].text;
+            document.getElementById('period-label').textContent = `${monthText} ${yearSelect.value}`;
+
+            // 2. Render Breakdown Kategori Pengeluaran
+            renderCategoryBreakdown(periodTxs, totalExpense);
+
+            // 3. Render Breakdown Aktivitas Anggota Keluarga
+            renderMemberBreakdown(periodTxs);
+
+            // 4. Render 5 Transaksi Terbaru di Beranda
+            renderTransactionList(periodTxs.slice(0, 5), 'recent-transactions-list', true);
+
+            // 5. Render Daftar Lengkap di Tab Transaksi dengan Filter Pencarian
+            const searchKeyword = (document.getElementById('search-tx').value || '').toLowerCase();
+            const typeFilter = document.getElementById('filter-type').value;
+            const memberFilter = document.getElementById('filter-member').value;
+
+            updateMemberFilterDropdown(periodTxs);
+
+            const filteredFull = periodTxs.filter(tx => {
+                const matchSearch = !searchKeyword ||
+                    (tx.note || '').toLowerCase().includes(searchKeyword) ||
+                    (tx.category || '').toLowerCase().includes(searchKeyword) ||
+                    (tx.memberName || '').toLowerCase().includes(searchKeyword) ||
+                    (tx.wallet || '').toLowerCase().includes(searchKeyword);
+                const matchType = typeFilter === 'all' || tx.type === typeFilter;
+                const matchMember = memberFilter === 'all' || tx.memberName === memberFilter;
+                return matchSearch && matchType && matchMember;
+            });
+
+            renderTransactionList(filteredFull, 'all-transactions-list', false);
+        }
+
+        function renderCategoryBreakdown(periodTxs, totalExpense) {
+            const container = document.getElementById('category-breakdown-list');
+            const expenses = periodTxs.filter(t => t.type === 'expense');
+
+            if (expenses.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-slate-400 text-xs">
+                        <i class="fa-solid fa-Folder-open text-2xl mb-2 block opacity-40"></i>
+                        Belum ada pengeluaran pada periode ini
+                    </div>`;
+                return;
+            }
+
+            const map = {};
+            expenses.forEach(tx => {
+                map[tx.category] = (map[tx.category] || 0) + (Number(tx.amount) || 0);
+            });
+
+            const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]);
+
+            container.innerHTML = sorted.map(([catName, amt]) => {
+                const pct = totalExpense > 0 ? Math.round((amt / totalExpense) * 100) : 0;
+                const catMeta = CATEGORIES.expense.find(c => c.id === catName) || { icon: '📌', color: '#f43f5e' };
+                return `
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="font-semibold text-slate-700 flex items-center gap-1.5">
+                                <span>${catMeta.icon}</span> ${catName}
+                            </span>
+                            <span class="font-bold text-slate-800">${formatRupiah(amt)} <span class="text-slate-400 font-normal">(${pct}%)</span></span>
+                        </div>
+                        <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div class="h-full rounded-full transition-all duration-500" style="width: ${pct}%; background-color: ${catMeta.color}"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderMemberBreakdown(periodTxs) {
+            const container = document.getElementById('member-breakdown-list');
+            if (periodTxs.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-slate-400 text-xs">
+                        <i class="fa-solid fa-user-group text-2xl mb-2 block opacity-40"></i>
+                        Belum ada aktivitas anggota keluarga
+                    </div>`;
+                return;
+            }
+
+            const memberStats = {};
+            periodTxs.forEach(tx => {
+                const key = tx.memberName || 'Anggota';
+                if (!memberStats[key]) {
+                    memberStats[key] = {
+                        name: key,
+                        avatar: tx.memberAvatar || '👤',
+                        role: tx.memberRole || 'Keluarga',
+                        income: 0,
+                        expense: 0,
+                        count: 0
+                    };
+                }
+                memberStats[key].count += 1;
+                if (tx.type === 'income') memberStats[key].income += Number(tx.amount) || 0;
+                else memberStats[key].expense += Number(tx.amount) || 0;
+            });
+
+            container.innerHTML = Object.values(memberStats).map(m => `
+                <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-lg shadow-sm">
+                            ${m.avatar}
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-xs sm:text-sm text-slate-800">${m.name}</h4>
+                            <p class="text-[11px] text-slate-500">${m.count} transaksi dicatat</p>
+                        </div>
+                    </div>
+                    <div class="text-right text-xs space-y-0.5">
+                        <div class="text-emerald-600 font-semibold">+${formatRupiah(m.income)}</div>
+                        <div class="text-rose-600 font-semibold">-${formatRupiah(m.expense)}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderTransactionList(list, containerId, isCompact) {
+            const container = document.getElementById(containerId);
+            if (list.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-10 text-slate-400 text-xs">
+                        <i class="fa-solid fa-receipt text-2xl mb-2 block opacity-40"></i>
+                        Belum ada catatan transaksi. Klik tombol <strong>+ Pemasukan</strong> atau <strong>- Pengeluaran</strong> di atas.
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = list.map(tx => {
+                const isInc = tx.type === 'income';
+                const catList = isInc ? CATEGORIES.income : CATEGORIES.expense;
+                const catMeta = catList.find(c => c.id === tx.category) || { icon: isInc ? '💰' : '💸' };
+
+                return `
+                    <div class="py-3.5 flex items-center justify-between gap-3 hover:bg-slate-50/80 px-2 rounded-2xl transition-colors">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-10 h-10 rounded-2xl ${isInc ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'} flex items-center justify-center text-lg shrink-0">
+                                ${catMeta.icon}
+                            </div>
+                            <div class="min-w-0">
+                                <p class="font-bold text-xs sm:text-sm text-slate-800 truncate">${tx.note || tx.category}</p>
+                                <div class="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500 mt-0.5">
+                                    <span class="font-medium text-slate-600">${tx.memberAvatar || '👤'} ${tx.memberName}</span>
+                                    <span>•</span>
+                                    <span>${tx.category}</span>
+                                    <span>•</span>
+                                    <span class="px-1.5 py-0.2 bg-slate-100 rounded text-slate-600">${tx.wallet || 'Tunai'}</span>
+                                    <span>•</span>
+                                    <span>${tx.date || ''}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-3 shrink-0">
+                            <span class="font-extrabold text-xs sm:text-sm ${isInc ? 'text-emerald-600' : 'text-rose-600'}">
+                                ${isInc ? '+' : '-'}${formatRupiah(tx.amount)}
+                            </span>
+                            ${!isCompact ? `
+                                <button onclick="window.app.deleteTransaction('${tx.id}')" class="w-7 h-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors" title="Hapus">
+                                    <i class="fa-regular fa-trash-can text-xs"></i>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderGoals() {
+            const container = document.getElementById('goals-grid');
+            if (state.goals.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full bg-white rounded-3xl p-8 text-center border border-slate-200/80">
+                        <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3 text-xl">
+                            <i class="fa-solid fa-piggy-bank"></i>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-sm">Belum Ada Target Tabungan</h3>
+                        <p class="text-xs text-slate-500 mt-1 max-w-md mx-auto">Buat target tabungan keluarga seperti Dana Darurat, Kurban, Pendidikan Anak, atau Liburan agar bisa dipantau bersama.</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = state.goals.map(g => {
+                const cur = Number(g.currentAmount) || 0;
+                const tgt = Number(g.targetAmount) || 1;
+                const pct = Math.min(100, Math.round((cur / tgt) * 100));
+
+                return `
+                    <div class="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-sm flex flex-col justify-between gap-4">
+                        <div>
+                            <div class="flex items-start justify-between gap-2">
+                                <div>
+                                    <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">Target Keluarga</span>
+                                    <h3 class="font-bold text-slate-800 text-base mt-1.5">${g.title}</h3>
+                                </div>
+                                <button onclick="window.app.deleteGoal('${g.id}')" class="text-slate-400 hover:text-rose-600 text-xs p-1">
+                                    <i class="fa-regular fa-trash-can"></i>
+                                </button>
+                            </div>
+
+                            <div class="mt-4 flex items-baseline justify-between text-xs">
+                                <span class="font-extrabold text-emerald-600 text-sm">${formatRupiah(cur)}</span>
+                                <span class="text-slate-500">dari ${formatRupiah(tgt)} (${pct}%)</span>
+                            </div>
+                            <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden mt-2">
+                                <div class="h-full bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full transition-all duration-500" style="width: ${pct}%"></div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+                            <span class="text-[11px] text-slate-400">Dibuat oleh ${g.createdBy || 'Keluarga'}</span>
+                            <button onclick="window.app.openTopupGoalModal('${g.id}', '${g.title.replace(/'/g, "\\'")}')" class="inline-flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors">
+                                <i class="fa-solid fa-plus"></i> Tambah Saldo
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateMemberFilterDropdown(periodTxs) {
+            const select = document.getElementById('filter-member');
+            const currentVal = select.value;
+            const members = Array.from(new Set(periodTxs.map(t => t.memberName).filter(Boolean)));
+
+            select.innerHTML = `<option value="all">Semua Anggota Keluarga</option>` +
+                members.map(m => `<option value="${m}">${m}</option>`).join('');
+
+            if (members.includes(currentVal)) select.value = currentVal;
+        }
+
+        // =====================================================
+        // LOGIKA GAMES SUAMI ISTRI (KARTU, RODA, KUPON CINTA)
+        // =====================================================
+        function switchGameMode(mode) {
+            ['cards', 'wheel', 'coupons'].forEach(m => {
+                document.getElementById(`game-panel-${m}`).classList.add('hidden');
+                const btn = document.getElementById(`game-tab-${m}`);
+                btn.className = "px-3 py-2 rounded-xl text-xs font-bold text-white/90 hover:text-white transition-all";
+            });
+            document.getElementById(`game-panel-${mode}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`game-tab-${mode}`);
+            activeBtn.className = "px-3 py-2 rounded-xl text-xs font-bold bg-white text-rose-600 shadow-sm transition-all";
+
+            if (mode === 'wheel') {
+                drawWheelCanvas();
+            }
+        }
+
+        function drawCoupleCard() {
+            const cat = document.getElementById('card-category-select').value;
+            const list = COUPLE_CARDS[cat] || COUPLE_CARDS.romantis;
+            const randomQuestion = list[Math.floor(Math.random() * list.length)];
+            state.currentCardText = randomQuestion;
+
+            const badgeLabels = {
+                romantis: '💕 Romantis & Nostalgia',
+                deeptalk: '🌙 Deep Talk Rumah Tangga',
+                keuangan: '💰 Kompak Finansial',
+                dare: '🔥 Tantangan Manja (Dare)'
+            };
+
+            const box = document.getElementById('couple-card-box');
+            box.classList.add('scale-95', 'opacity-70');
+            setTimeout(() => {
+                document.getElementById('card-badge').textContent = badgeLabels[cat] || '💕 Kartu Cinta';
+                document.getElementById('card-question-text').textContent = `"${randomQuestion}"`;
+                box.classList.remove('scale-95', 'opacity-70');
+            }, 150);
+        }
+
+        async function pushCoupleGameItem(payload) {
+            const fullData = {
+                familyCode: state.familyCode.toUpperCase(),
+                memberName: state.memberName,
+                memberAvatar: state.memberAvatar,
+                createdAt: Date.now(),
+                ...payload
+            };
+
+            if (state.user && state.db) {
+                try {
+                    const colRef = collection(state.db, 'artifacts', state.appId, 'public', 'data', 'family_couple_games');
+                    await addDoc(colRef, fullData);
+                } catch (e) {
+                    console.error(e);
+                }
+            } else {
+                if (payload.itemType === 'coupon') {
+                    state.coupleCoupons.unshift({ id: 'local-' + Date.now(), ...fullData });
+                } else {
+                    state.coupleFeed.unshift({ id: 'local-' + Date.now(), ...fullData });
+                }
+                renderCoupleGames();
+            }
+        }
+
+        async function sendCardToPartner() {
+            await pushCoupleGameItem({
+                itemType: 'feed',
+                message: `Mengajak menjawab kartu: "${state.currentCardText}"`
+            });
+            showToast("Kartu dikirim ke Papan Cinta pasanganmu!");
+        }
+
+        async function submitLoveNote(e) {
+            e.preventDefault();
+            const input = document.getElementById('love-note-input');
+            const text = input.value.trim();
+            if (!text) return;
+            input.value = '';
+
+            await pushCoupleGameItem({
+                itemType: 'feed',
+                message: text
+            });
+            showToast("Pesan cinta terkirim ke pasangan!");
+        }
+
+        function setWheelTopic(topic) {
+            state.wheelTopic = topic;
+            ['manja', 'tugas', 'kencan'].forEach(t => {
+                const btn = document.getElementById(`wheel-btn-${t}`);
+                if (t === topic) {
+                    btn.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold bg-rose-600 text-white transition-all";
+                } else {
+                    btn.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-800 transition-all";
+                }
+            });
+            drawWheelCanvas();
+        }
+
+        function drawWheelCanvas() {
+            const canvas = document.getElementById('couple-wheel-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const items = WHEEL_TOPICS[state.wheelTopic] || WHEEL_TOPICS.manja;
+            const numSlices = items.length;
+            const arc = (2 * Math.PI) / numSlices;
+            const radius = canvas.width / 2;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            items.forEach((item, i) => {
+                const angle = i * arc - Math.PI / 2;
+                ctx.beginPath();
+                ctx.moveTo(radius, radius);
+                ctx.arc(radius, radius, radius - 4, angle, angle + arc);
+                ctx.fillStyle = item.color;
+                ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = "#ffffff";
+                ctx.stroke();
+
+                // Teks tiap juring
+                ctx.save();
+                ctx.translate(radius, radius);
+                ctx.rotate(angle + arc / 2);
+                ctx.textAlign = "right";
+                ctx.fillStyle = "#ffffff";
+                ctx.font = "bold 12px Inter, sans-serif";
+                ctx.fillText(item.label, radius - 18, 4);
+                ctx.restore();
+            });
+        }
+
+        function spinCoupleWheel() {
+            if (state.isSpinning) return;
+            state.isSpinning = true;
+
+            const items = WHEEL_TOPICS[state.wheelTopic] || WHEEL_TOPICS.manja;
+            const sliceDeg = 360 / items.length;
+            const randomIndex = Math.floor(Math.random() * items.length);
+            const extraSpins = 5 * 360;
+            // Hitung sudut agar berhenti tepat di juring randomIndex di posisi jarum atas
+            const targetAngle = extraSpins + (360 - (randomIndex * sliceDeg + sliceDeg / 2));
+            state.wheelRotation += targetAngle;
+
+            const canvas = document.getElementById('couple-wheel-canvas');
+            canvas.style.transform = `rotate(${state.wheelRotation}deg)`;
+            document.getElementById('wheel-result-text').textContent = "Memutar roda...";
+
+            setTimeout(async () => {
+                state.isSpinning = false;
+                const chosen = items[randomIndex];
+                document.getElementById('wheel-result-text').textContent = `🎉 ${chosen.label}!`;
+                showToast(`Hasil Putaran: ${chosen.label}!`);
+
+                await pushCoupleGameItem({
+                    itemType: 'feed',
+                    message: `Memutar Roda Pasutri & mendapat hasil: 🎉 "${chosen.label}"`
+                });
+            }, 3500);
+        }
+
+        async function createDefaultCoupons() {
+            const defaults = [
+                { title: "💆‍♂️ Kupon Pijat Bahu & Punggung 20 Menit", targetFor: "Pasangan" },
+                { title: "🍜 Kupon Bebas Pilih Menu Makan Malam", targetFor: "Pasangan" },
+                { title: "☕ Kupon Dibuatkan Kopi/Teh Hangat Pagi Hari", targetFor: "Suami" },
+                { title: "🛍️ Kupon Me-Time / Bebas Tugas Dapur Sehari", targetFor: "Istri" }
+            ];
+            for (const c of defaults) {
+                await pushCoupleGameItem({
+                    itemType: 'coupon',
+                    title: c.title,
+                    targetFor: c.targetFor,
+                    redeemed: false,
+                    redeemedBy: ''
+                });
+            }
+            showToast("4 Kupon Cinta berhasil ditambahkan!");
+        }
+
+        async function submitCustomCoupon(e) {
+            e.preventDefault();
+            const titleInput = document.getElementById('coupon-title-input');
+            const forInput = document.getElementById('coupon-for-input');
+            const title = titleInput.value.trim();
+            if (!title) return;
+            titleInput.value = '';
+
+            await pushCoupleGameItem({
+                itemType: 'coupon',
+                title: `🎟️ ${title}`,
+                targetFor: forInput.value,
+                redeemed: false,
+                redeemedBy: ''
+            });
+            showToast("Kupon Cinta baru berhasil dikirim!");
+        }
+
+        async function redeemCoupon(couponId, couponTitle) {
+            if (state.user && state.db && !String(couponId).startsWith('local-')) {
+                try {
+                    const docRef = doc(state.db, 'artifacts', state.appId, 'public', 'data', 'family_couple_games', couponId);
+                    await updateDoc(docRef, {
+                        redeemed: true,
+                        redeemedBy: `${state.memberAvatar} ${state.memberName}`
+                    });
+                    await pushCoupleGameItem({
+                        itemType: 'feed',
+                        message: `Mengklaim Kupon Cinta: "${couponTitle}" 💖`
+                    });
+                    showToast("Kupon berhasil diklaim! Beritahu pasanganmu.");
+                } catch (err) {
+                    console.error(err);
+                }
+            } else {
+                const item = state.coupleCoupons.find(c => c.id === couponId);
+                if (item) {
+                    item.redeemed = true;
+                    item.redeemedBy = `${state.memberAvatar} ${state.memberName}`;
+                }
+                renderCoupleGames();
+                showToast("Kupon berhasil diklaim!");
+            }
+        }
+
+        function renderCoupleGames() {
+            // 1. Render Feed Pesan Cinta
+            const feedEl = document.getElementById('couple-feed-list');
+            if (feedEl) {
+                if (state.coupleFeed.length === 0) {
+                    feedEl.innerHTML = `
+                        <div class="text-center py-8 text-slate-400 text-xs">
+                            Belum ada pesan. Kocok kartu atau tulis pesan manis pertama untuk pasanganmu!
+                        </div>`;
+                } else {
+                    feedEl.innerHTML = state.coupleFeed.slice(0, 15).map(item => `
+                        <div class="p-3 rounded-2xl bg-rose-50/60 border border-rose-100 text-xs">
+                            <div class="flex items-center justify-between text-[11px] text-rose-700 font-bold mb-1">
+                                <span>${item.memberAvatar || '💑'} ${item.memberName}</span>
+                                <span class="text-[10px] text-slate-400 font-normal">Baru saja</span>
+                            </div>
+                            <p class="text-slate-700 leading-relaxed">${item.message}</p>
+                        </div>
+                    `).join('');
+                }
+            }
+
+            // 2. Render Daftar Kupon Cinta
+            const couponGrid = document.getElementById('coupons-grid');
+            if (couponGrid) {
+                if (state.coupleCoupons.length === 0) {
+                    couponGrid.innerHTML = `
+                        <div class="col-span-full bg-white rounded-3xl p-8 text-center border border-slate-200/80">
+                            <p class="text-xs text-slate-500">Belum ada Kupon Cinta. Klik tombol <strong>+ Buat Paket Kupon Cinta</strong> di atas untuk memulai!</p>
+                        </div>`;
+                } else {
+                    couponGrid.innerHTML = state.coupleCoupons.map(c => `
+                        <div class="relative overflow-hidden rounded-3xl p-5 border-2 border-dashed ${c.redeemed ? 'bg-slate-50 border-slate-200 opacity-75' : 'bg-rose-50/40 border-rose-300'} flex flex-col justify-between gap-3">
+                            <div>
+                                <div class="flex items-center justify-between gap-2">
+                                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700">
+                                        Untuk: ${c.targetFor || 'Pasangan'}
+                                    </span>
+                                    <span class="text-[10px] text-slate-400">Dari ${c.memberName}</span>
+                                </div>
+                                <h4 class="font-bold text-slate-800 text-sm mt-2">${c.title}</h4>
+                            </div>
+                            <div class="pt-2 border-t border-rose-200/50 flex items-center justify-between">
+                                ${c.redeemed ? `
+                                    <span class="text-[11px] font-bold text-emerald-600">
+                                        ✅ Diklaim oleh ${c.redeemedBy}
+                                    </span>
+                                ` : `
+                                    <span class="text-[11px] text-rose-600 font-semibold">Tersedia</span>
+                                    <button onclick="window.app.redeemCoupon('${c.id}', '${(c.title || '').replace(/'/g, "\\'")}')" class="bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all">
+                                        Klaim Kupon
+                                    </button>
+                                `}
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            }
+        }
+
+        // =====================================================
+        // NAVIGASI, MODAL, & EXPORT FILE
+        // =====================================================
+        function switchTab(tabName) {
+            ['dashboard', 'transactions', 'goals', 'games', 'settings'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                const navBtn = document.getElementById(`nav-${t}`);
+                if (navBtn) {
+                    navBtn.classList.remove('text-emerald-600', 'text-rose-600', 'font-semibold');
+                    navBtn.classList.add('text-slate-400', 'font-medium');
+                }
+            });
+
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`nav-${tabName}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('text-slate-400', 'font-medium');
+                activeBtn.classList.add(tabName === 'games' ? 'text-rose-600' : 'text-emerald-600', 'font-semibold');
+            }
+
+            if (tabName === 'games') {
+                drawWheelCanvas();
+                renderCoupleGames();
+            }
+        }
+
+        function openModal(id) {
+            if (id === 'modal-profile') {
+                document.getElementById('input-family-code').value = state.familyCode;
+                document.getElementById('input-member-name').value = state.memberName;
+            }
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        function setTxType(type) {
+            state.activeTxType = type;
+            const btnInc = document.getElementById('btn-type-income');
+            const btnExp = document.getElementById('btn-type-expense');
+            const submitBtn = document.getElementById('btn-submit-tx');
+
+            if (type === 'income') {
+                btnInc.className = "py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white shadow-sm transition-all";
+                btnExp.className = "py-2 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-700 transition-all";
+                submitBtn.className = "w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-lg shadow-emerald-600/20 transition-all";
+            } else {
+                btnExp.className = "py-2 rounded-xl text-xs font-bold bg-rose-600 text-white shadow-sm transition-all";
+                btnInc.className = "py-2 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-700 transition-all";
+                submitBtn.className = "w-full py-3.5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm shadow-lg shadow-rose-600/20 transition-all";
+            }
+
+            const catSelect = document.getElementById('tx-category');
+            catSelect.innerHTML = CATEGORIES[type].map(c => `<option value="${c.id}">${c.icon} ${c.id}</option>`).join('');
+        }
+
+        function openTransactionModal(type) {
+            setTxType(type);
+            document.getElementById('tx-member-readonly').value = `${state.memberAvatar} ${state.memberName}`;
+            setDefaultDate();
+            openModal('modal-transaction');
+        }
+
+        function openTopupGoalModal(goalId, goalTitle) {
+            document.getElementById('topup-goal-id').value = goalId;
+            document.getElementById('topup-goal-name').textContent = `Tabungan: ${goalTitle}`;
+            openModal('modal-topup-goal');
+        }
+
+        function saveProfile(e) {
+            e.preventDefault();
+            const rawCode = document.getElementById('input-family-code').value.trim().toUpperCase();
+            const roleVal = document.getElementById('input-member-role').value.split('|');
+            const nameVal = document.getElementById('input-member-name').value.trim();
+
+            state.familyCode = rawCode || 'KELUARGA-01';
+            state.memberAvatar = roleVal[0] || '👨';
+            state.memberRole = roleVal[1] || 'Keluarga';
+            state.memberName = nameVal || state.memberRole;
+
+            // Update UI Header & Settings
+            document.getElementById('header-family-code').textContent = state.familyCode;
+            document.getElementById('header-member-name').textContent = state.memberName;
+            document.getElementById('header-member-avatar').textContent = state.memberAvatar;
+            document.getElementById('settings-family-code').textContent = state.familyCode;
+            document.getElementById('settings-member-profile').textContent = `${state.memberAvatar} ${state.memberName} (${state.memberRole})`;
+
+            closeModal('modal-profile');
+            startRealtimeListeners();
+            showToast(`Terhubung ke Kode Keluarga: ${state.familyCode}`);
+        }
+
+        function copyFamilyCode() {
+            const tempInput = document.createElement('input');
+            tempInput.value = state.familyCode;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            tempInput.remove();
+            showToast(`Kode Keluarga "${state.familyCode}" disalin!`);
+        }
+
+        function copyFirebaseRules() {
+            const rulesText = document.getElementById('firebase-rules-code').textContent;
+            const tempArea = document.createElement('textarea');
+            tempArea.value = rulesText;
+            document.body.appendChild(tempArea);
+            tempArea.select();
+            document.execCommand('copy');
+            tempArea.remove();
+            showToast("Firestore Rules berhasil disalin! Tempel di tab Rules Firebase Anda.");
+        }
+
+        function setDefaultDate() {
+            const dateInput = document.getElementById('tx-date');
+            if (dateInput) {
+                const today = new Date();
+                const yyyy = today.getFullYear();
+                const mm = String(today.getMonth() + 1).padStart(2, '0');
+                const dd = String(today.getDate()).padStart(2, '0');
+                dateInput.value = `${yyyy}-${mm}-${dd}`;
+            }
+        }
+
+        function exportCSV() {
+            const periodTxs = getFilteredTransactionsByPeriod();
+            if (periodTxs.length === 0) {
+                showToast("Belum ada data transaksi untuk diunduh", "error");
+                return;
+            }
+
+            const headers = ["Tanggal", "Tipe", "Kategori", "Nominal", "Dompet", "Anggota", "Catatan"];
+            const rows = periodTxs.map(t => [
+                t.date || "",
+                t.type === "income" ? "Pemasukan" : "Pengeluaran",
+                `"${(t.category || "").replace(/"/g, '""')}"`,
+                t.amount || 0,
+                `"${(t.wallet || "").replace(/"/g, '""')}"`,
+                `"${(t.memberName || "").replace(/"/g, '""')}"`,
+                `"${(t.note || "").replace(/"/g, '""')}"`
+            ]);
+
+            const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `Laporan-${state.familyCode}-${Date.now()}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+            showToast("Laporan CSV berhasil diunduh!");
+        }
+
+        function downloadManifestFile() {
+            const manifestStr = JSON.stringify(getManifestObject(), null, 2);
+            const blob = new Blob([manifestStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "manifest.json";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+            showToast("File manifest.json berhasil diunduh!");
+        }
+
+        function downloadServiceWorkerFile() {
+            const swCode = `const CACHE_NAME = 'dompet-keluarga-v1';
+const ASSETS = ['./', './index.html', './manifest.json'];
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+  );
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    fetch(event.request).catch(() => caches.match(event.request))
+  );
+});`;
+            const blob = new Blob([swCode], { type: "application/javascript" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "sw.js";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+            showToast("File sw.js (Service Worker) berhasil diunduh!");
+        }
+
+        async function triggerInstallPWA() {
+            if (state.deferredInstallPrompt) {
+                state.deferredInstallPrompt.prompt();
+                const { outcome } = await state.deferredInstallPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    showToast("Terima kasih telah menginstal DompetKeluarga!");
+                }
+                state.deferredInstallPrompt = null;
+            } else {
+                showToast("Buka menu browser (titik tiga / Share) lalu pilih 'Tambahkan ke Layar Utama'", "info");
+            }
+        }
+
+        function applyCustomFirebase() {
+            const raw = document.getElementById('custom-firebase-input').value.trim();
+            if (!raw) {
+                showToast("Masukkan JSON konfigurasi Firebase terlebih dahulu", "error");
+                return;
+            }
+            try {
+                const parsed = JSON.parse(raw);
+                initFirebaseConnection(parsed);
+                showToast("Menghubungkan ke project Firebase Anda...");
+            } catch (err) {
+                showToast("Format JSON tidak valid. Pastikan berupa objek JSON yang benar.", "error");
+            }
+        }
+
+        // Ekspos fungsi ke window agar bisa diakses dari event HTML
+        window.app = {
+            switchTab,
+            openModal,
+            closeModal,
+            openTransactionModal,
+            openTopupGoalModal,
+            setTxType,
+            submitTransaction,
+            deleteTransaction,
+            submitGoal,
+            submitTopupGoal,
+            deleteGoal,
+            saveProfile,
+            copyFamilyCode,
+            copyFirebaseRules,
+            exportCSV,
+            downloadManifestFile,
+            downloadServiceWorkerFile,
+            triggerInstallPWA,
+            applyCustomFirebase,
+            switchGameMode,
+            drawCoupleCard,
+            sendCardToPartner,
+            submitLoveNote,
+            setWheelTopic,
+            spinCoupleWheel,
+            createDefaultCoupons,
+            submitCustomCoupon,
+            redeemCoupon,
+            handlePeriodChange: renderAll,
+            renderAll
+        };
+
+        // Inisialisasi saat halaman dimuat
+        function initApp() {
+            const now = new Date();
+            const monthSelect = document.getElementById('filter-month');
+            const yearSelect = document.getElementById('filter-year');
+            if (monthSelect) monthSelect.value = String(now.getMonth());
+            if (yearSelect) {
+                const curYear = String(now.getFullYear());
+                if ([...yearSelect.options].some(o => o.value === curYear)) {
+                    yearSelect.value = curYear;
+                }
+            }
+
+            setDefaultDate();
+            setTxType('expense');
+            initPWA();
+            drawWheelCanvas();
+            renderAll();
+            renderGoals();
+            renderCoupleGames();
+            initFirebaseConnection();
+        }
+
+        initApp();
+    </script>
+</body>
+</html>
